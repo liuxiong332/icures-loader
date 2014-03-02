@@ -1,5 +1,3 @@
 
 
-var reg = /"[^"]*"/g;
-var match = reg.exec('"nimei"');
-console.log(match);
+var icures = require('./serialize/icures_rw');
