@@ -50,4 +50,13 @@ describe('icu resource load and save', function() {
             });
         });
     });
+    describe('get package name by specific file name', function() {
+        it('should get the package name', function() {
+            var packNameMap = [{fileName:"C:\\nimei\\package_zh.txt",packName:"package"},
+                {fileName:".\\package.txt",packName:"package"}];
+            packNameMap.forEach(function(element) {
+                assert.equal(icures._getPackNameByFileName(element.fileName),element.packName);
+            });
+        });
+    });
 });
