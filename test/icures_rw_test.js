@@ -74,7 +74,7 @@ describe('icu resource load and save', function() {
             });
         });
     });
-    describe('ResTable test',function() {
+    describe('ResTable Load test',function() {
         var getDirFiles = ResTable._getDirFiles;
         var readFile = ResTable._readFile;
         before(function() {
@@ -97,7 +97,7 @@ describe('icu resource load and save', function() {
         it('ResTable invoke load to get tables ', function(done) {
             var tableObj = new ResTable(RES_TABLE.packName);
             assert.equal(tableObj.packName, RES_TABLE.packName);
-            tableObj.Load(function(err) {
+            tableObj.load(function(err) {
                 if(err) {
                     return done(err);
                 }
@@ -115,5 +115,5 @@ describe('icu resource load and save', function() {
             ResTable._readFile = readFile;
             ResTable._getDirFiles = getDirFiles;
         })
-    })
+    });
 });
