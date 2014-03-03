@@ -3,15 +3,7 @@ var fs = require('fs');
 var async = require('async');
 var serialize = require('./serialize');
 var path = require('path');
-
-
-//serialize obj and write into file, when complete, callback will invoke
-//callback's signature is function(err)
-function writeIntoFile(obj, fileName, callback) {
-    var strOut = serialize.serializeToString(obj);
-    fs.writeFile(fileName, strOut,callback);
-}
-
+var util = require('util');
 
 //ResTable stand for the translate tables
 function  ResTable(fileName) {
@@ -48,24 +40,30 @@ ResTable._getDirFiles = function(fileName, callback) {
 
 
 //find the file name that match the package name
-//findCallback: function(fileName,index,langKey), callback when found the file name match the packname
-ResTable._findMatchFileNameByPackageName = function(files, packName, findCallback) {
-    var fileArray = {};
-    var matchReg = new RegExp('^'+packName+"_(\w*)\\.txt");  // (\w*) stand for language str
+//return fileArray, in the fileArray is object {fileName, lang}
+ResTable._findMatchFileNameByPackageName = function(files, packName) {
+    var fileArray = [];
+    var matchReg = new RegExp('^'+packName+"_(\\w*)\\.txt");  // (\w*) stand for language str
     files.forEach(function(file,index) {
         var match = matchReg.exec(file) ;
         if(match !== null) {
-            findCallback(file,index,langKey);
+            fileArray.push({fileName:file, lang:match[1]});
         }
     });
+    return fileArray;
 };
+
+//wrap the fs.readFile, for testing
+ResTable._readFile = function(fileName, callback) {
+    fs.readFile(fileName,{encoding:'utf8'},callback);
+}
 
 //when the table object load completely, callback will be invoked
 //callback's signature is function(err,table)
 ResTable._loadFromFile = function(fileName, callback) {
     async.waterfall([
         function(callback) {
-            fs.readFile(fileName,{encoding:'utf8'},callback);
+            ResTable._readFile(fileName,callback);
         },
         function(data,callback) {
             if(typeof data !== 'string') {
@@ -77,43 +75,34 @@ ResTable._loadFromFile = function(fileName, callback) {
     ], callback);
 };
 
+//serialize obj and write into file, when complete, callback will invoke
+//callback's signature is function(err)
+ResTable._writeIntoFile = function(obj, fileName, callback) {
+    var strOut = serialize.serializeToString(obj);
+    fs.writeFile(fileName, strOut,callback);
+}
 
 //Load all the resource files in the specific directory
 //callback : function(err)
 ResTable.prototype.Load = function(callback) {
     var transTable = this.transTable = {};
+    var packName = this.packName;
     ResTable._getDirFiles(this.fileName, function(err,files) {
         if(err) return callback(err);
-        ResTable._findMatchFileNameByPackageName(files,packageName,function(fileName,key) {        //file name match the regex
-            ResTable._loadFromFile(fileName,function(err,table) {
-                if(err)    return ;
-                transTable[key] = table;    //if load successfully, add into fileArray
+        var fileArray = ResTable._findMatchFileNameByPackageName(files,packName);
+
+        async.each(fileArray, insertTableObject, callback);
+
+        //insert {fileName, lang} object into transTable
+        function insertTableObject(fileInfo,callback) {        //file name match the regex
+            ResTable._loadFromFile(fileInfo.fileName,function(err,table) {
+                if(err)    return callback(err);
+                transTable[fileInfo.lang] = table;    //if load successfully, add into fileArray
+                callback();
             });
-        });
+        }
     });
 };
 
-//load all of the table object from the files
-//fileName : package file path
-//callback: function(err,fileArray)
-ResTable._loadAllLangTable = function(fileName, callback) {
-    var packageName = ResTable._getPackNameByFileName(fileName);
-    ResTable._getDirFiles(fileName, function(err,files) {
-        if(err) return callback(err);
-        var fileArray = {};
-        ResTable._findMatchFileNameByPackageName(files,packageName,function(fileName,key) {        //file name match the regex
-            ResTable._loadFromFile(fileName,function(err,table) {
-                if(err)    return;
-                fileArray[key] = table;    //if load successfully, add into fileArray
-            });
-        });
-        callback(null, fileArray);
-    });
-}
 
-exports._writeIntoFile = writeIntoFile;
-exports._loadFromFile = loadFromFile;
-exports._processPackageName = processPackageName;
-
-exports._findMatchFileNameByPackageName = findMatchFileNameByPackageName;
-exports._getPackNameByFileName = getPackNameByFileName;
+exports.ResTable = ResTable;
