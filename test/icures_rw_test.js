@@ -40,4 +40,14 @@ describe('icu resource load and save', function() {
             assert.equal(icures._processPackageName("Package"),"Package");
         });
     });
+    describe('find file names by package name', function() {
+        it('all filename match the package name should return', function() {
+            var files = ['package_cn.txt','package_en.txt'];
+            var langs = ['cn','en'];
+            icures._findMatchFileNameByPackageName(files,'package',function(file,index,langKey) {
+                assert(file in files);
+                assert.equal(langs[index],langKey);
+            });
+        });
+    });
 });

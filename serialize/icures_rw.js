@@ -38,26 +38,53 @@ function processPackageName(packName) {
     return packName.slice(0,index);
 }
 
-//get all the package file name
+//find the file name that match the package name
+//findCallback: function(fileName,index,langKey), callback when found the file name match the packname
+function findMatchFileNameByPackageName(files, packName, findCallback) {
+    var fileArray = {};
+    var matchReg = new RegExp('^'+packName+"_(\w*)\\.txt");  // (\w*) stand for language str
+    files.forEach(function(file,index) {
+        var match = matchReg.exec(file) ;
+        if(match !== null) {
+            findCallback(file,index,langKey);
+        }
+    });
+}
+
+//get the file names in the directory that filename is included
+function  getDirFiles(fileName, callback) {
+    var dirName = path.dirname(fileName);
+    fs.readdir(dirName, function(err,files) {
+        if(err)    return callback(err);
+        callback(null,files);
+    });
+}
+
+//get package name by analyzing file name
+function  getPackNameByFileName(fileName) {
+    var baseName = path.basename(fileName);
+    return processPackageName(baseName);
+}
+
+//load all of the table object from the files
 //fileName : package file path
 //callback: function(err,files)
-function getAllPackageFileNames(fileName, callback) {
-    var dirName = path.dirname(fileName);
-    var baseName = path.basename(fileName);
-    var packageName = processPackageName(baseName);
-    fs.readdir(dirName, function(err,files) {
+function loadAllLangTable(fileName, callback) {
+    var packageName = getPackNameByFileName(fileName);
+    var fileArray = {};
+    getDirFiles(fileName, function(err,files) {
         if(err) return callback(err);
-        var matchReg = new RegExp('^'+packageName);
-        files.forEach(function(file) {
-            var baseName = path.basename(file);
-            if( matchReg.test(file) ) {
-                
-            }
-        }
-
-    })
+        findMatchFileNameByPackageName(files,packageName,function(fileName,key) {        //file name match the regex
+            loadFromFile(fileName,function(err,table) {
+                if(err)    return;
+                fileArray[key] = table;    //if load successfully, add into fileArray
+            });
+        });
+    });
 }
 
 exports._writeIntoFile = writeIntoFile;
 exports._loadFromFile = loadFromFile;
 exports._processPackageName = processPackageName;
+
+exports._findMatchFileNameByPackageName = findMatchFileNameByPackageName;
