@@ -9,6 +9,7 @@ var util = require('util');
 function  ResTable(fileName) {
     this.packName = ResTable._getPackNameByFileName(fileName);
     this.fileName = fileName;
+    this.transTable = {};
 }
 
 
@@ -88,7 +89,7 @@ ResTable._writeIntoFile = function(obj, fileName, callback) {
 //Load all the resource files in the specific directory
 //callback : function(err)
 ResTable.prototype.load = function(callback) {
-    var transTable = this.transTable = {};
+    var transTable = this.transTable ;
     var packName = this.packName;
     ResTable._getDirFiles(this.fileName, function(err,files) {
         if(err) return callback(err);

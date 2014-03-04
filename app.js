@@ -1,4 +1,7 @@
 
 
-var reg = /^package_(\w*)\.txt/;
-console.log(reg.test("package_cn.txt"));
+var obj = {ni:'ni', li:'li'};
+
+for(var prop in obj) {
+    console.log( obj[prop] );
+}
