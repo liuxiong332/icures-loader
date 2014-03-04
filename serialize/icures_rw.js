@@ -59,7 +59,7 @@ ResTable._readFile = function(fileName, callback) {
 }
 //wrap fs.writeFile, for testing
 ResTable._writeFile = function(fileName, str, callback) {
-    fs.writeFile(fileName, strOut,callback);
+    fs.writeFile(fileName, str,callback);
 }
 //when the table object load completely, callback will be invoked
 //callback's signature is function(err,table)
