@@ -5,6 +5,7 @@ var serialize = require('./serialize');
 var path = require('path');
 var util = require('util');
 
+
 //ResTable stand for the translate tables
 function  ResTable(fileName) {
     this.packName = ResTable._getPackNameByFileName(fileName);
@@ -122,4 +123,11 @@ ResTable.prototype.save = function(callback) {
     ResTable._save(this.transTable,callback);
 };
 
+ResTable.prototype.getTransTable = function(lang) {
+    return this.transTable[lang];
+}
+
+ResTable.prototype.getLangArray = function() {
+    return Object.keys(this.transTable);
+}
 exports.ResTable = ResTable;

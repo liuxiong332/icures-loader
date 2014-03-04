@@ -4,6 +4,71 @@ var async = require('async');
 var util = require('util');
 var events = require('events');
 
+function  langTransStrPair(lang,str) {
+    this.lang = lang;
+    this.transStr = str;
+}
+
+//translate string per language
+//langTransArray: array of langTransStrPair
+function LangToTransStrMap( langTransArray) {
+    this.langTransMap = {};
+    if(langTransArray) {
+        this.insertArray(langTransArray);
+    }
+}
+LangToTransStrMap.prototype.insert = function( langTrans ) {
+    this.langTransMap[langTrans.lang] = langTrans.transStr;
+}
+LangToTransStrMap.prototype.insertArray = function( langTransArray ) {
+    var langTransMap = this.langTransMap;
+    langTransArray.forEach(function(langStrPair) {
+        langTransMap[langStrPair.lang] = langStrPair.transStr;
+    })
+}
+//langArray: array of language string
+LangToTransStrMap.prototype.remove = function( langArray ) {
+    var langTransMap = this.langTransMap;
+    langArray.forEach(function(lang) {
+        delete langTransMap[lang];
+    });
+}
+
+LangToTransStrMap.prototype.getByLang = function(lang) {
+    return this.langTransMap[lang];
+}
+
+function TranslateViewTable() {
+    this.keyLangMap = {};
+}
+
+TranslateViewTable.prototype.isKeyExisting = function(key) {
+    return this.keyLangMap[key];
+}
+
+util.inherits(TranslateViewTable, events.EventEmitter );
+
+TranslateViewTable.prototype.insert = function(keyId, langTrans) {
+    var langMap = this.keyLangMap[keyId];
+    if(!langMap) {
+        langMap = this.keyLangMap[keyId] = new LangToTransStrMap();
+    }
+    langMap.insert( transStr );
+    this.emit("insert",keyId, langTrans);
+};
+
+TranslateViewTable.prototype.insertArray = function(keyId, langTransArray) {
+
+}
+
+TranslateViewTable.prototype.remove = function(keyId) {
+    delete this[keyId];
+    this.emit('remove',keyId);
+};
+
+function TranslateViewTableSet() {
+
+}
 //create a new table
 //packName:[string] package name of new table
 //langAttr:[array]  array of language string, such as ['zh','en']
@@ -94,25 +159,7 @@ ResMapTable.prototype.addLang = function(lang) {
     this.langArray.push(lang);
 }
 
-//global table
-function GlobalTable() {
-}
 
-util.inherits(GlobalTable, events.EventEmitter );
-
-GlobalTable.prototype.insert = function(keyId, langKey, transStr) {
-    var thisTable = this;
-    if(!thisTable[keyId]) {
-        thisTable[keyId] = {};
-    }
-    thisTable[keyId][langKey] = transStr;
-    this.emit("insert",langKey,keyId,transStr);
-};
-
-GlobalTable.prototype.remove = function(keyId) {
-    delete this[keyId];
-    this.emit('remove',keyId);
-};
 
 function LocalTables() {
 
