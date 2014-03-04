@@ -28,6 +28,48 @@ ResMapTable.prototype.load = function(callback) {
     ],callback);
 };
 
+//when something insert into global table
+ResMapTable._onGlobalInsert = function(langKey, keyId, transStr) {
+    var table = this.transTable[langKey];
+    if(!table) {
+        table = this.transTable[langKey] = {};
+    }
+    table[keyId] = transStr;
+}
+
+ResMapTable._onGlobalRemove = function(keyId) {
+    var transTable = this.transTable;
+    var table;
+    for(var lang in transTable) {
+        table = transTable[lang];
+        delete table[keyId];
+    }
+}
+
+ResMapTable._onLocalInsert = function(tableName, langKey, keyId, transStr) {
+    var table = this.transTable[langKey];
+    if(!table || typeof table !== 'object') {
+        table = this.transTable[langKey] = {};
+    }
+    var localTable = table[tableName];
+    if( !localTable || typeof localTable !== 'object') {
+        localTable = table[tableName] = {};
+    }
+    localTable[keyId] = transStr;
+}
+
+ResMapTable._onLocalRemove = function(tableName, keyId) {
+    var transTAble = this.transTable;
+    var table;
+    for(var lang in transTAble) {
+        table = transTAble[lang];
+        if(!keyId) {
+            delete table[tableName];
+        }
+    }
+    var localTable = table[tableName];
+}
+
 ResMapTable.prototype._analyzeTable = function() {
     var transTable = this.resTable.transTable;
     var globalTable = this.globalTable = new GlobalTable();
