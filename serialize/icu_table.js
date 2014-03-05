@@ -194,7 +194,7 @@ AllTableView.prototype._analyzeTable = function() {
 AllTableView.prototype.getGlobalTable = function() {
     return  this.globalTable;
 }
-AllTableView.prototype.getLocalTables = function() {
+AllTableView.prototype.getChildTables = function() {
     return this.localTables;
 }
 

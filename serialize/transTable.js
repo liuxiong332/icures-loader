@@ -1,7 +1,10 @@
 
+var async = require('async');
+var path = require('path');
+
 //the table stand for the map of keyId and the translation string
-function KeyTransStrTable() {
-    this.tableName = "root";
+function KeyTransStrTable(tableName) {
+    this.tableName = tableName || "root";
     this.keyTransStrMap = {};
     this.childTableMap = {};
 }
@@ -54,6 +57,14 @@ KeyTransStrTable.prototype.addChildNode = function(key, value) {
     }
 }
 
+KeyTransStrTable.prototype.getChildNode = function(key) {
+    return this.keyTransStrMap[key] || this.childTableMap[key];
+}
+//create a new table
+KeyTransStrTable.newTable = function(lang) {
+    return new KeyTransStrTable(lang);
+}
+
 KeyTransStrTable.serializeToString = function( keyTransStrTable ) {
     var outStr = keyTransStrTable.tableName ;
     serializeNode(keyTransStrTable);
@@ -83,8 +94,8 @@ KeyTransStrTable.serializeToString = function( keyTransStrTable ) {
         keyStrTable.getKeys().forEach(seriaTable);
         keyStrTable.getChildTableNames().forEach(seriaTable);
         function seriaTable(key) {
-            outStr = outStr + element;
-            serializeNode(keyStrTable[key]);
+            outStr = outStr + key;
+            serializeNode(keyStrTable.getChildNode(key));
         }
     }
 }
@@ -160,59 +171,140 @@ KeyTransStrTable.deserializeFromString = function(resStr) {
  }
 
  */
-function  KeyTransStrFile(fileName) {
+function  KeyTransStrFile(fileName, rootTable) {
     this.fileName = fileName;
-    this.rootTable = null;
+    this.rootTable = rootTable;
 }
 
+//wrap the fs.readFile, for testing
+KeyTransStrFile._readFile = function(fileName, callback) {
+    fs.readFile(fileName,{encoding:'utf8'},callback);
+}
+//wrap fs.writeFile, for testing
+KeyTransStrFile._writeFile = function(fileName, str, callback) {
+    fs.writeFile(fileName, str,callback);
+}
 //load from file
-KeyTransStrFile.load = function(fileName) {
-    var transFile = new KeyTransStrFile(fileName);
+//callback: function(err, data)
+KeyTransStrFile.load = function(fileName, callback) {
+    KeyTransStrFile._readFile(fileName,function(err, data) {
+        var table;
+        try {
+            table = KeyTransStrTable.deserializeFromString(data)
+        } catch(err) {
+            return callback(err);
+        }
+        var transFile = new KeyTransStrFile(fileName, table);
+        callback(null,transFile);
+    });
 }
 
-KeyTransStrFile.newFile = function(fileName) {
-    var transFile = new  KeyTransStrFile(fileName);
+KeyTransStrFile.newFile = function(lang, fileName) {
+    var table = KeyTransStrTable.newTable(lang,fileName);
+    return new  KeyTransStrFile(fileName,table);
 };
 
-KeyTransStrFile.prototype.save = function() {
-
+//callback: function(err)
+KeyTransStrFile.prototype.save = function(callback) {
+    var outStr = KeyTransStrTable.serializeToString( this.rootTable );
+    KeyTransStrFile._writeFile(this.fileName, outStr, callback);
 }
 
 KeyTransStrFile.prototype.getRootTable = function() {
-    return rootTable;
+    return this.rootTable;
 };
 
+KeyTransStrFile.prototype.setRootTable = function(table) {
+    this.rootTable = table;
+}
+
+KeyTransStrFile.prototype.getLang = function() {
+    return this.rootTable.tableName;
+}
 
 function KeyTransStrFileSet( fileNames) {
     this.langFileMap = {};
 }
 
-KeyTransStrFileSet.load = function(packName, fileNames) {
+KeyTransStrFileSet.load = function( ) {
     this.packName = packName;
     this.langFileMap = {};
 };
 
-KeyTransStrFileSet.loadFromDir = function(packName, dir) {
+//callback: function(err,fileSet);
+KeyTransStrFileSet.loadFromFiles = function( fileNames , callback) {
+    var fileSet = new KeyTransStrFileSet();
+    async.each(fileNames, KeyTransStrFileSet.prototype.loadFile.bind(fileSet), function(err) {
+        callback(err,fileSet);
+    });
+}
 
+//get all the txt file names in the directory
+//callback: function(err,files)
+KeyTransStrFileSet._getDirFiles = function(dir, callback) {
+    fs.readdir(dir, function(err,files) {
+        if(err)    return callback(err);
+        var txtRegex = /\.txt/;
+        var txtFiles = files.filter(function(fileName) {
+            return txtRegex.test(fileName);
+        })
+        callback(null,txtFiles);
+    });
+};
+
+//callback: function(err,fileSet)
+KeyTransStrFileSet.loadFromDir = function( dir, callback) {
+    async.waterfall([
+        function(callback) {
+            KeyTransStrFileSet._getDirFiles(dir,callback);
+        },
+        function(files, callback) {
+            KeyTransStrFileSet.loadFromFiles(files, callback);
+        }
+    ], callback);
+};
+
+KeyTransStrFileSet._getFileNameByLang = function(lang,dir) {
+    return path.join(dir, lang+'.txt');
 };
 
 KeyTransStrFileSet.newFileSet = function(langArray, dir) {
-
+    var langFileMap = this.langFileMap;
+    langArray.forEach(function(lang) {
+        var transFile = KeyTransStrFile.newFile(lang, KeyTransStrFileSet._getFileNameByLang(lang,dir));
+        langFileMap[ transFile.getLang() ] = transFile;
+    });
 };
 
+//load the existing file
+KeyTransStrFileSet.prototype.loadFile = function(fileName, callback) {
+    var langFileMap = this.langFileMap;
+    KeyTransStrFile.load(fileName, function(err,transFile) {
+        if(!err) {
+            langFileMap[ transFile.getLang() ] = transFile;
+        }
+        callback(null);
+    });
+}
 KeyTransStrFileSet.prototype.getLangArray = function() {
-
+    return Object.keys(this.langFileMap);
 }
- 
+KeyTransStrFileSet.prototype.getTransFile = function(lang) {
+    return this.langFileMap[lang];
+}
 //add a language translation file, dir is the save directory
-KeyTransStrFileSet.prototype.addLang = function(lang, fileName) {
+//KeyTransStrFileSet.prototype.addLang = function(lang, fileName) {
+//    throw "now donnot support addlang";
+//}
+//
+//KeyTransStrFileSet.prototype.addFile = function(fileName) {
+//
+//}
+//
+//KeyTransStrFileSet.prototype.removeLang = function(lang) {
+//
+//}
 
-}
-
-KeyTransStrFileSet.prototype.addFile = function(fileName) {
-
-}
-
-KeyTransStrFileSet.prototype.removeLang = function(lang) {
-
-}
+exports.KeyTransStrTable = KeyTransStrTable;
+exports.KeyTransStrFile = KeyTransStrFile;
+exports.KeyTransStrFileSet = KeyTransStrFileSet;
