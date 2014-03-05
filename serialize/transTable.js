@@ -222,7 +222,7 @@ KeyTransStrFile.prototype.getLang = function() {
     return this.rootTable.tableName;
 }
 
-function KeyTransStrFileSet( fileNames) {
+function KeyTransStrFileSet() {
     this.langFileMap = {};
 }
 
@@ -264,7 +264,8 @@ KeyTransStrFileSet._getFileNameByLang = function(lang,dir) {
 };
 
 KeyTransStrFileSet.newFileSet = function(langArray, dir) {
-    var langFileMap = this.langFileMap;
+    var fileSet = new KeyTransStrFileSet();
+    var langFileMap = fileSet.langFileMap;
     langArray.forEach(function(lang) {
         var transFile = KeyTransStrFile.newFile(lang, KeyTransStrFileSet._getFileNameByLang(lang,dir));
         langFileMap[ transFile.getLang() ] = transFile;

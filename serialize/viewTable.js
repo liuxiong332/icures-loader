@@ -2,6 +2,7 @@
 var async = require('async');
 var util = require('util');
 var events = require('events');
+var transTable = require('./transTable');
 
 function  langTransStrPair(lang,str) {
     this.lang = lang;
@@ -111,28 +112,13 @@ TableSetView.prototype.getOrCreate = function(tableName) {
 //return: [object] the instance of ResTable object
 
 function AllTableView() {
-    this.resTable = new ResTable(fileName);
+    this.transFileSet = null;
 }
-
-//callback: function(err)
-AllTableView.prototype.load = function(callback) {
-    var resTable = this.resTable;
-    var analyze = this._analyzeTable;
-    async.waterfall([
-        function(callback) {
-            resTable.load(callback);
-        },
-        function(callback) {
-            analyze();
-            callback(null);
-        }
-    ],callback);
-};
 
 //create a new AllTableView by the file names
 //fileNames: the array of filename which is string
-AllTableView.newView = function( fileNames ) {
-
+AllTableView.newView = function( langArray, dir ) {
+    transTable.KeyTransStrFileSet.newFileSet(langArray,dir);
 }
 
 //create a new AllTableView by the files in the specific dir
@@ -218,13 +204,9 @@ AllTableView.prototype.removeLang = function(lang) {
 
 }
 
-
-
 function LocalTables() {
 
 }
-
-
 
 //analyze transTable, get globalTable and localTable
 //globalTable: GlobalTable
