@@ -9,6 +9,13 @@ function  langTransStrPair(lang,str) {
     this.transStr = str;
 }
 
+langTransStrPair.prototype.getLang = function() {
+    return this.lang;
+}
+langTransStrPair.prototype.getTransStr = function() {
+    return this.transStr;
+}
+
 //translate string per language
 //langTransArray: array of langTransStrPair
 function LangToTransStrMap( langTransArray) {
@@ -18,14 +25,13 @@ function LangToTransStrMap( langTransArray) {
     }
 }
 LangToTransStrMap.prototype.insert = function( langTrans ) {
-    this.langTransMap[langTrans.lang] = langTrans.transStr;
+    this.langTransMap[langTrans.getLang()] = langTrans.getTransStr();
 }
 LangToTransStrMap.prototype.insertArray = function( langTransArray ) {
-    var langTransMap = this.langTransMap;
     langTransArray.forEach(function(langStrPair) {
-        langTransMap[langStrPair.lang] = langStrPair.transStr;
-    })
-}
+        this.insert( langStrPair );
+    },this);
+};
 //langArray: lang or array of language string
 LangToTransStrMap.prototype.remove = function( langArray ) {
     var langTransMap = this.langTransMap;
@@ -52,6 +58,7 @@ TableView.prototype.isKeyExisting = function(key) {
 
 util.inherits(TableView, events.EventEmitter );
 
+//langTrans: object of langTransStrPair
 TableView.prototype.insert = function(keyId, langTrans) {
     var langMap = this.keyLangMap[keyId];
     if(!langMap) {
@@ -86,6 +93,14 @@ TableSetView.prototype.add = function(tableName, tableView) {
     this.emit('add',tableName,tableView);
 };
 
+//get the tableView of the specific tableName, if not existing, create a new tableView
+TableSetView.prototype.getOrNew = function(tableName) {
+    var tableSet = this.tableSet;
+    if(!tableSet[tableName]) {
+        this.add(tableName,new TableView());
+    }
+    return tableSet[tableName];
+}
 
 TableSetView.prototype.remove = function(tableName) {
     delete this.tableSet[tableName];
@@ -99,6 +114,15 @@ TableSetView.prototype.getTableNames = function() {
 TableSetView.prototype.getTable = function(tableName) {
     return this.tableSet[tableName];
 }
+//iterate each table
+//callbackfn: function(tableName, tableView)
+TableSetView.prototype.forEachTable = function( callbackfn,that ) {
+    var callback = that?callbackfn.bind(that):callbackfn;
+    var tableSet = this.tableSet;
+    for(var tableName in tableSet) {
+        callback(tableName, tableSet[tableName] );
+    }
+}
 TableSetView.prototype.getOrCreate = function(tableName) {
     var table = this.tableSet[tableName];
     if(!table) {
@@ -111,132 +135,159 @@ TableSetView.prototype.getOrCreate = function(tableName) {
 //langAttr:[array]  array of language string, such as ['zh','en']
 //return: [object] the instance of ResTable object
 
-function AllTableView() {
-    this.transFileSet = null;
+//transFileSet: object of KeyTransStrFileSet
+function AllTableView( transFileSet ) {
+    this.transFileSet = transFileSet;
+    var globalTable = this.globalTable = new TableView();
+    var childTables = this.childTables = new TableSetView();
+    this._analyzeTable();
+
+    globalTable.on('insert', AllTableView.prototype._onGlobalInsert.bind(this));
+    globalTable.on('remove', AllTableView.prototype._onGlobalRemove.bind(this));
+    childTables.on('add', AllTableView.prototype._onAddChildTable.bind(this));
+    childTables.on('remove', AllTableView.prototype._onRemoveChildTable.bind(this));
+    childTables.forEachTable( function(tableName, tableView) {
+        tableView.on('insert', AllTableView.prototype._onChildTableInsert.bind(this,tableName));
+        tableView.on('remove', AllTableView.prototype._onChildTableRemove.bind(this,tableName));
+    });
 }
 
 //create a new AllTableView by the file names
-//fileNames: the array of filename which is string
-AllTableView.newView = function( langArray, dir ) {
-    transTable.KeyTransStrFileSet.newFileSet(langArray,dir);
-}
-
 //create a new AllTableView by the files in the specific dir
-AllTableView.newViewInDir = function( langArray, dir ) {
-
+AllTableView.newView = function( langArray, dir ) {
+    var transFileSet = transTable.KeyTransStrFileSet.newFileSet(langArray,dir);
+    return new AllTableView(transFileSet);
 }
 
-AllTableView.load = function( fileNames ) {
-
-}
-
-AllTableView.loadInDir = function( dir ) {
-
-}
-
-//when something insert into global table
-AllTableView._onGlobalInsert = function(langKey, keyId, transStr) {
-    var table = this.transTable[langKey];
-    if(!table) {
-        table = this.transTable[langKey] = {};
-    }
-    table[keyId] = transStr;
-}
-
-AllTableView._onGlobalRemove = function(keyId) {
-    var transTable = this.transTable;
-    var table;
-    for(var lang in transTable) {
-        table = transTable[lang];
-        delete table[keyId];
-    }
-}
-
-AllTableView._onLocalInsert = function(tableName, langKey, keyId, transStr) {
-    var table = this.transTable[langKey];
-    if(!table || typeof table !== 'object') {
-        table = this.transTable[langKey] = {};
-    }
-    var localTable = table[tableName];
-    if( !localTable || typeof localTable !== 'object') {
-        localTable = table[tableName] = {};
-    }
-    localTable[keyId] = transStr;
-}
-
-AllTableView._onLocalRemove = function(tableName, keyId) {
-    var transTAble = this.transTable;
-    var table;
-    for(var lang in transTAble) {
-        table = transTAble[lang];
-        if(!keyId) {
-            delete table[tableName];
+//callback: function(err, tableView)
+AllTableView.load = function( fileNames, callback) {
+    transTable.KeyTransStrFileSet.loadFromFiles(fileNames, function(err,fileSet) {
+        if(err) {
+            return callback(err);
         }
-    }
-    var localTable = table[tableName];
-}
-
-AllTableView.prototype._analyzeTable = function() {
-    var transTable = this.resTable.transTable;
-    var globalTable = this.globalTable = new GlobalTable();
-    var localTables = this.localTables = new LocalTables();
-    this.langArray = Object.keys(transTable);
-
-    analyzeTable(transTable,globalTable, localTables);
+        var tableView = new AllTableView(fileSet);
+        callback(null, tableView);
+    });
 };
 
-AllTableView.prototype.getGlobalTable = function() {
-    return  this.globalTable;
+//callback: function(err, tableView)
+AllTableView.loadInDir = function( dir, callback ) {
+    transTable.KeyTransStrFileSet.loadFromDir(dir, function(err,fileSet) {
+        if(err) {
+            return callback(err);
+        }
+        var tableView = new AllTableView(fileSet);
+        callback(null, tableView);
+    });
+};
+
+
+AllTableView.prototype.getTableByLang = function(lang) {
+    var transFile = this.transFileSet.getTransFile( lang );
+    if(!transFile) {
+        return null;
+    }
+    return transFile.getRootTable();
 }
-AllTableView.prototype.getChildTables = function() {
-    return this.localTables;
+//when something insert into global table
+AllTableView.prototype._onGlobalInsert = function(keyId, langTrans) {
+    var table = this.getTableByLang(langTrans.getLang());
+    if(table) {
+        table[keyId] = langTrans.getTransStr();
+    }
 }
 
-AllTableView.prototype.getLangArray = function() {
-    return this.langArray;
+AllTableView.prototype._onGlobalRemove = function(keyId) {
+    this.transFileSet.forEachFile( function(transFile) {
+        transFile.getRootTable().removeKeyTransStr(keyId);
+    });
 }
 
-AllTableView.prototype.addLang = function(lang) {
-    this.langArray.push(lang);
+AllTableView.prototype._onChildTableInsert = function(tableName, keyId, langTrans) {
+    var table = this.getTableByLang(langTrans.getLang());
+    if(!table) {
+        return ;
+    }
+    var childTable = table.getChildTableByName(tableName);
+    if(!childTable) {
+        return ;
+    }
+    childTable[keyId] = langTrans.getTransStr();
+
 }
 
-AllTableView.prototype.removeLang = function(lang) {
-
+AllTableView.prototype._onChildTableRemove = function(tableName, keyId) {
+    this.transFileSet.forEachFile( function(transFile) {
+        var childTable = transFile.getRootTable().getChildTableByName(tableName);
+        if(childTable) {
+            childTable.removeKeyTransStr(keyId);
+        }
+    });
 }
 
-function LocalTables() {
+AllTableView.prototype._onAddChildTable = function(tableName, tableView) {
+    this.transFileSet.forEachFile( function(transFile) {
+        var table = transFile.getRootTable();
+        var childTable = new transFile.KeyTransStrTable(tableName);
+        table.addChildTable(tableName, childTable);
+        //TODO if transFile contain some element, then need to synchronize to translation files
+    });
+};
+AllTableView.prototype._onRemoveChildTable = function(tableName) {
+    this.transFileSet.forEachFile( function(transFile) {
+        var table = transFile.getRootTable();
+        table.removeChildTable(tableName);
+    });
+};
 
-}
-
-//analyze transTable, get globalTable and localTable
-//globalTable: GlobalTable
-//localTable:  LocalTables
-//return {globalTable, localTable}
-function  analyzeTable(transTable, globalTable, localTables) {
+//analyze transTable, get tableView
+function  analyzeTable(transTable,lang, tableView) {
     var langArray = Object.keys(transTable);
     langArray.forEach(function(lang) {
         var table = transTable[lang];
         analyzeObject(table,lang,globalTable, localTables);
     });
+    transTable.getKeys().forEach(function(key) {
+        var transStr = transTable.getTransStr(key);
+        tableView.insert(key,new langTransStrPair(lang,transStr));
+    });
 };
 
-//table object : { keyId: transStr }
-function  analyzeObject(table,lang, globalTable, localTables) {
-    var prop, keyId;
-    var localTable;
-    for(var keyId in table) {
-        prop = table[keyId];
-        if(typeof prop === 'string') {
-            globalTable.insert(lang,keyId, prop);
-        } else if(typeof prop === 'object' && localTables ) {
-            localTable = localTables.getOrCreate(keyId);
-            analyzeObject(prop,lang, localTable, null);
-            localTables.add(keyId, localTable);
-        }
-    }
+AllTableView.prototype._analyzeTable = function() {
+    var fileSet = this.transFileSet;
+    var globalTable = this.globalTable ;
+    var childTables = this.childTables ;
+    fileSet.getLangArray.forEach( function(lang) {
+        var table = fileSet.getTransFile(lang).getRootTable();
+        analyzeTable(table, lang, globalTable);
+
+        table.getChildTableNames().forEach( function(tableName) {
+            var childTable = table.getChildTableByName(tableName);
+            var tableView = childTables.getOrCreate(tableName);
+            analyzeTable(childTable,lang,tableView);
+        })
+    });
+};
+//return global table of TableView
+AllTableView.prototype.getGlobalTable = function() {
+    return  this.globalTable;
+}
+//return child tables of TableSetView
+AllTableView.prototype.getChildTables = function() {
+    return this.childTables;
 }
 
+AllTableView.prototype.getLangArray = function() {
+    return this.transFileSet.getLangArray();
+}
 
+//AllTableView.prototype.addLang = function(lang) {
+//    this.langArray.push(lang);
+//}
+//
+//AllTableView.prototype.removeLang = function(lang) {
+//
+//}
 
 //for test
 exports._analyzeTable = analyzeTable;

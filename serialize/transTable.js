@@ -270,6 +270,7 @@ KeyTransStrFileSet.newFileSet = function(langArray, dir) {
         var transFile = KeyTransStrFile.newFile(lang, KeyTransStrFileSet._getFileNameByLang(lang,dir));
         langFileMap[ transFile.getLang() ] = transFile;
     });
+    return fileSet;
 };
 
 //load the existing file
@@ -287,6 +288,16 @@ KeyTransStrFileSet.prototype.getLangArray = function() {
 }
 KeyTransStrFileSet.prototype.getTransFile = function(lang) {
     return this.langFileMap[lang];
+}
+
+//callbackfn: function( transFile )
+KeyTransStrFileSet.prototype.forEachFile = function( callbackfn, that ) {
+    var langFileMap = this.langFileMap;
+    var callback = that?callback.bind(that): callbackfn;
+    for(var lang in langFileMap) {
+        callback( langFileMap[lang] );
+    }
+
 }
 //add a language translation file, dir is the save directory
 //KeyTransStrFileSet.prototype.addLang = function(lang, fileName) {
