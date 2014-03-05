@@ -1,27 +1,9 @@
 
 var assert = require('assert');
-var util = require('util');
 var TABLE_DATA = require('./transTable_data').TABLE_DATA;
 var transTable = require('../serialize/transTable');
 
 describe('KeyTransStrTable should', function() {
-//    describe('serialize', function() {
-//        it('to string', function() {
-//            transTable.KeyTransStrTable.serializeToString()
-//        });
-//    });
-//    it('should serialize to the specific string', function() {
-//        RES_TABLE.forEach(function(element) {
-//            assert.equal( element.str,
-//                serialize.serializeToString(element.obj).toString());
-//        });
-//    });
-//    it('should deserialize from the specific string', function() {
-//        RES_TABLE.forEach(function(element) {
-//            assert.deepEqual( element.obj,
-//                serialize.deserializeFromString(element.str));
-//        });
-//    });
     describe('add and remove key and translation str', function() {
         it('get successfully', function() {
             var keyStr = {
@@ -60,5 +42,85 @@ describe('KeyTransStrTable should', function() {
                     tableData.getTable());
             });
         });
+    });
+});
+
+describe('KeyTransStrFile and KeyTransStrFileSet should', function() {
+    var KeyTransStrFile = transTable.KeyTransStrFile;
+    var KeyTransStrFileSet = transTable.KeyTransStrFileSet;
+    var readFile = KeyTransStrFile._readFile;
+    var writeFile = KeyTransStrFile._writeFile;
+    var getDirFiles = KeyTransStrFileSet._getDirFiles;
+    before(function() {
+        KeyTransStrFile._readFile = function(fileName, callback) {
+            var tableData;
+            for(var index=0; index<TABLE_DATA.length; ++index) {
+                tableData = TABLE_DATA[index];
+                if( tableData.getFileName() === fileName) {
+                    return callback(null, tableData.getStr());
+                }
+            }
+        };
+        KeyTransStrFile._writeFile = function(fileName, str, callback) {
+            callback(null,fileName,str);
+        };
+        KeyTransStrFileSet._getDirFiles = function(dir, callback) {
+            var files = [];
+            TABLE_DATA.forEach(function(tableData) {
+                files.push(tableData.getFileName());
+            });
+            callback(null,files);
+        }
+    });
+
+    describe('KeyTransStrFile should', function() {
+        function  TestNewFile(tableData) {
+            it('create a new KeyTransStrFile', function() {
+                var transFile = KeyTransStrFile.newFile(tableData.getLang(), tableData.getFileName());
+                transFile.setRootTable(tableData.getTable());
+                assert.equal( transFile.getRootTable(), tableData.getTable());
+                assert.equal( transFile.getLang(), tableData.getLang());
+                transFile.save(function(err,fileName, str) {
+                    assert.equal(fileName,tableData.getFileName());
+                    assert.equal(str, tableData.getStr());
+                });
+            });
+        };
+        TABLE_DATA.forEach( TestNewFile );
+
+        function  TestLoadFile(tableData) {
+            it('load from file', function() {
+                var transFile = KeyTransStrFile.load(tableData.getFileName(),function(err, transFile) {
+                    assert(transFile);
+                    assert.deepEqual(transFile.getRootTable(), tableData.getTable());
+                    transFile.save(function(err,fileName,str) {
+                        assert.equal(fileName, tableData.getFileName());
+                        assert.equal(str, tableData.getStr());
+                    });
+                });
+            });
+        }
+        TABLE_DATA.forEach(TestLoadFile);
+    });
+    describe('KeyTransStrFileSet should', function() {
+        it('load files from dir', function() {
+            KeyTransStrFileSet.loadFromDir('',function(err,fileSet) {
+                fileSet.getLangArray().forEach(function(lang) {
+                    for(var index=0; index<TABLE_DATA.length; ++index) {
+                        if( TABLE_DATA[index].getLang() === lang) {
+                            break;
+                        }
+                    }
+                    assert(index<TABLE_DATA.length);
+                    assert.deepEqual( fileSet.getTransFile(lang).getRootTable(),
+                        TABLE_DATA[index].getTable());
+                });
+            });
+        });
+    });
+    after(function() {
+        KeyTransStrFile._readFile = readFile;
+        KeyTransStrFile._writeFile = writeFile;
+        KeyTransStrFileSet._getDirFiles = getDirFiles;
     });
 });

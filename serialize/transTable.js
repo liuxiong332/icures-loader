@@ -185,7 +185,7 @@ KeyTransStrFile._writeFile = function(fileName, str, callback) {
     fs.writeFile(fileName, str,callback);
 }
 //load from file
-//callback: function(err, data)
+//callback: function(err, transStrFile)
 KeyTransStrFile.load = function(fileName, callback) {
     KeyTransStrFile._readFile(fileName,function(err, data) {
         var table;
@@ -225,11 +225,6 @@ KeyTransStrFile.prototype.getLang = function() {
 function KeyTransStrFileSet( fileNames) {
     this.langFileMap = {};
 }
-
-KeyTransStrFileSet.load = function( ) {
-    this.packName = packName;
-    this.langFileMap = {};
-};
 
 //callback: function(err,fileSet);
 KeyTransStrFileSet.loadFromFiles = function( fileNames , callback) {

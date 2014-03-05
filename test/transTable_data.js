@@ -1,7 +1,9 @@
 
 var transTable = require('../serialize/transTable');
 
-function  TableData(str, tableObj) {
+function  TableData(fileName,lang, str, tableObj) {
+    this.fileName = fileName;
+    this.lang = lang;
     this.str = str;
     this.table = tableObj;
 }
@@ -13,59 +15,25 @@ TableData.prototype.getTable = function() {
     return this.table;
 };
 
+TableData.prototype.getLang = function() {
+    return this.lang;
+}
+TableData.prototype.getFileName = function() {
+    return this.fileName;
+}
+
 var TABLE_DATA = [];
 
 (function() {
-    var str = 'world{ni{"ni"}da{"汉子"}composite{who{"谁"}is{"是"}}}';
-    var table = transTable.KeyTransStrTable.newTable('world');
+    var str = 'zh{ni{"ni"}da{"汉子"}composite{who{"谁"}is{"是"}}}';
+    var table = transTable.KeyTransStrTable.newTable('zh');
     table.addKeyTransStr('ni',"ni");
     table.addKeyTransStr('da','汉子');
     var childTable = transTable.KeyTransStrTable.newTable('composite');
     childTable.addKeyTransStr('who','谁');
     childTable.addKeyTransStr('is',"是");
     table.addChildTable('composite',childTable);
-    TABLE_DATA.push(new TableData(str,table));
+    TABLE_DATA.push(new TableData('zh.txt','zh',str,table));
 }());
 
-function  FileData(lang, fileName, table, transFile) {
-    this.fileName = fileName;
-    this.table = table;
-    this.lang = lang;
-    this.transFile = transFile;
-}
-
-FileData.prototype.getFileName = function() {
-    return this.fileName;
-}
-FileData.prototype.getTable = function() {
-    return this.table;
-}
-FileData.prototype.getLang = function() {
-    return this.lang;
-}
-FileData.prototype.getTransFile = function() {
-    return this.transFile;
-}
-
-var FILE_DATA = [];
-(function() {
-
-})
-var TABLE_MAP =
-{
-    transTable: {
-        en: {hello: "hello", world: "world", good: { good: "good"}},
-        cn: {hello: "你好", world: "世界", good: { good: '好'}}
-    },
-    mapTable: {
-        hello: {en: "hello", cn:"你好"},
-        world: {en: "world", cn: "世界"}
-    },
-    localMapTable: {
-        good: { good: {en: "good", cn:"好"} }
-    }
-};
-
-
 exports.TABLE_DATA = TABLE_DATA;
-exports.TABLE_MAP = TABLE_MAP;
