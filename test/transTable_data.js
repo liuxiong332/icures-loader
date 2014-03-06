@@ -36,4 +36,18 @@ var TABLE_DATA = [];
     TABLE_DATA.push(new TableData('zh.txt','zh',str,table));
 }());
 
+
+var fileSetData;
+
+(function() {
+    function generateFile(fileSet, fileStr,fileName) {
+        var table = transTable.KeyTransStrTable.deserializeFromString( fileStr );
+        fileSet.addFile(new transTable.KeyTransStrFile(fileName,table));
+    }
+    fileSetData = new transTable.KeyTransStrFileSet();
+    generateFile(fileSetData, 'zh{ni{"ni"}da{"汉子"}composite{who{"谁"}is{"是"}}}', 'zh.txt');
+    generateFile(fileSetData, 'en{ni{"ni"}da{"da"}composite{who{"who"}is{"is"}}}', 'en.txt');
+}())
+
 exports.TABLE_DATA = TABLE_DATA;
+exports.FILE_SET = fileSetData;

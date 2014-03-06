@@ -47,6 +47,14 @@ LangToTransStrMap.prototype.remove = function( langArray ) {
 LangToTransStrMap.prototype.getByLang = function(lang) {
     return this.langTransMap[lang];
 }
+//callbackfn: function(lang, transStr)
+LangToTransStrMap.prototype.forEachLang = function( callbackfn, that) {
+    var callback = that?callbackfn.bind(that):callbackfn;
+    var langTransMap = this.langTransMap;
+    for(var lang in langTransMap) {
+        callback(lang, langTransMap[lang]);
+    }
+}
 
 function TableView() {
     this.keyLangMap = {};
@@ -80,7 +88,14 @@ TableView.prototype.getKeys = function() {
 TableView.prototype.getLangTransStrMap = function(key) {
     return this.keyLangMap[key];
 };
-
+//callbackfn: function(key, langTransStr);
+TableView.prototype.forEachKey = function( callbackfn,that ) {
+    var callback = that?callbackfn.bind(that):callbackfn;
+    var keyLangMap = this.keyLangMap;
+    for(var key in keyLangMap) {
+        callback(key, keyLangMap[key]);
+    }
+};
 //the set of TableView
 function TableSetView() {
     this.tableSet = {};
@@ -149,7 +164,7 @@ function AllTableView( transFileSet ) {
     childTables.forEachTable( function(tableName, tableView) {
         tableView.on('insert', AllTableView.prototype._onChildTableInsert.bind(this,tableName));
         tableView.on('remove', AllTableView.prototype._onChildTableRemove.bind(this,tableName));
-    });
+    }, this);
 }
 
 //create a new AllTableView by the file names
@@ -188,20 +203,21 @@ AllTableView.prototype.getTableByLang = function(lang) {
         return null;
     }
     return transFile.getRootTable();
-}
+};
+
 //when something insert into global table
 AllTableView.prototype._onGlobalInsert = function(keyId, langTrans) {
     var table = this.getTableByLang(langTrans.getLang());
     if(table) {
-        table[keyId] = langTrans.getTransStr();
+        table.addKeyTransStr(keyId, langTrans.getTransStr());
     }
-}
+};
 
 AllTableView.prototype._onGlobalRemove = function(keyId) {
     this.transFileSet.forEachFile( function(transFile) {
         transFile.getRootTable().removeKeyTransStr(keyId);
     });
-}
+};
 
 AllTableView.prototype._onChildTableInsert = function(tableName, keyId, langTrans) {
     var table = this.getTableByLang(langTrans.getLang());
@@ -212,9 +228,8 @@ AllTableView.prototype._onChildTableInsert = function(tableName, keyId, langTran
     if(!childTable) {
         return ;
     }
-    childTable[keyId] = langTrans.getTransStr();
-
-}
+    childTable.addKeyTransStr(keyId, langTrans.getTransStr());
+};
 
 AllTableView.prototype._onChildTableRemove = function(tableName, keyId) {
     this.transFileSet.forEachFile( function(transFile) {
@@ -228,7 +243,7 @@ AllTableView.prototype._onChildTableRemove = function(tableName, keyId) {
 AllTableView.prototype._onAddChildTable = function(tableName, tableView) {
     this.transFileSet.forEachFile( function(transFile) {
         var table = transFile.getRootTable();
-        var childTable = new transFile.KeyTransStrTable(tableName);
+        var childTable = new transTable.KeyTransStrTable(tableName);
         table.addChildTable(tableName, childTable);
         //TODO if transFile contain some element, then need to synchronize to translation files
     });
@@ -242,11 +257,6 @@ AllTableView.prototype._onRemoveChildTable = function(tableName) {
 
 //analyze transTable, get tableView
 function  analyzeTable(transTable,lang, tableView) {
-    var langArray = Object.keys(transTable);
-    langArray.forEach(function(lang) {
-        var table = transTable[lang];
-        analyzeObject(table,lang,globalTable, localTables);
-    });
     transTable.getKeys().forEach(function(key) {
         var transStr = transTable.getTransStr(key);
         tableView.insert(key,new langTransStrPair(lang,transStr));
@@ -257,7 +267,7 @@ AllTableView.prototype._analyzeTable = function() {
     var fileSet = this.transFileSet;
     var globalTable = this.globalTable ;
     var childTables = this.childTables ;
-    fileSet.getLangArray.forEach( function(lang) {
+    fileSet.getLangArray().forEach( function(lang) {
         var table = fileSet.getTransFile(lang).getRootTable();
         analyzeTable(table, lang, globalTable);
 
@@ -290,10 +300,11 @@ AllTableView.prototype.getLangArray = function() {
 //}
 
 //for test
-exports._analyzeTable = analyzeTable;
-exports.LangToTransStrMap = LangToTransStrMap;
+//exports._analyzeTable = analyzeTable;
+//exports.LangToTransStrMap = LangToTransStrMap;
 
 exports.langTransStrPair = langTransStrPair;
 exports.LangToTransStrMap = LangToTransStrMap;
 exports.TableView = TableView;
 exports.TableSetView = TableSetView;
+exports.AllTableView = AllTableView;

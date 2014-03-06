@@ -23,6 +23,14 @@ KeyTransStrTable.prototype.getTransStr = function(key) {
     return this.keyTransStrMap[key];
 }
 
+//callbackfn: function(key,transStr)
+KeyTransStrTable.prototype.forEachKey = function(callbackfn, that) {
+    var callback = that?callbackfn.bind(that):callbackfn;
+    var keyStrMap = this.keyTransStrMap;
+    for(var key in keyStrMap) {
+        callback(key, keyStrMap[key]);
+    }
+}
 KeyTransStrTable.prototype.addKeyTransStr = function(key,transStr) {
     this.keyTransStrMap[key] = transStr;
 }
@@ -290,6 +298,10 @@ KeyTransStrFileSet.prototype.getTransFile = function(lang) {
     return this.langFileMap[lang];
 }
 
+
+KeyTransStrFileSet.prototype.addFile = function( transFile ) {
+    this.langFileMap[transFile.getLang()] = transFile;
+}
 //callbackfn: function( transFile )
 KeyTransStrFileSet.prototype.forEachFile = function( callbackfn, that ) {
     var langFileMap = this.langFileMap;
