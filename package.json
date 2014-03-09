@@ -2,10 +2,11 @@
   "name": "icures_loader",
   "version": "0.0.1",
   "description": "ICU res client",
-  "main": "app.js",
+  "main": "html/main.html",
   "private": true,
   "dependencies": {
-      "async": "*"
+      "async": "*",
+      "jade": "*"
   },
   "devDependencies": {
       "should": "*",

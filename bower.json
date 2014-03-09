@@ -1,0 +1,26 @@
+{
+  "name": "icures-loader",
+  "version": "0.0.1",
+  "homepage": "https://github.com/liuxiong332/icures-loader",
+  "authors": [
+    "liuxiong332 <liuxiong332@163.com>"
+  ],
+  "description": "icu resource files loader",
+  "main": "main.html",
+  "keywords": [
+    "icures-loader"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "*",
+    "bootstrap": "*"
+  }
+}

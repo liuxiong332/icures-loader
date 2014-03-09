@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bootstrap 101 Template</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="../bower_components/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="../css/icures.css">
+    <!--link rel="stylesheet" href="../css/icures.css"-->
+</head>
+<body>
+
+  <div class="container">
+      <table class="table table-striped">
+          <thead>
+          <tr>
+              <th>Language Name</th>
+              <th>Language Description</th>
+              <th></th>
+          </tr>
+          </thead>
+          <tbody id="language-list">
+          </tbody>
+      </table>
+      <p class="hidden">
+          <button type="button" class="btn btn-success" id="modify-lang-btn">
+              <span class="glyphicon glyphicon-move"/>
+          </button>
+          <button type="button" id="remove-lang-btn" class="btn btn-danger pull-right">
+              <span class="glyphicon glyphicon-remove"/>
+          </button>
+      </p>
+
+  </div>
+  <div class="container">
+      <p>
+          <button type="button" id="add-language-btn" class="btn btn-lg btn-primary">
+              <span class="glyphicon glyphicon-plus"/>
+          </button>
+          <button type="button" class="btn btn-lg btn-primary pull-right">
+              <span class="glyphicon glyphicon-forward"/>
+          </button>
+      </p>
+      <form class="hidden" role="form" id="add-language-form">
+          <div class="form-group">
+              <label for="name-input">Language Name</label>
+              <input type="text" class="form-control" id="name-input" placeholder="input language name"/>
+          </div>
+          <div class="form-group">
+              <label for="des-input">Language Description</label>
+              <input type="text" class="form-control" id="des-input" placeholder="input language description"/>
+          </div>
+          <div class="form-group">
+              <input id="file-path" type="text" placeholder="Choose File" disabled>
+              <button type="button" class="btn btn-primary fileUpload">
+                  <span class="glyphicon glyphicon-file"></span>
+                  <input type="file" id="save-path-input" class="upload" accept=".txt" nwsaveas/>
+              </button>
+          </div>
+          <div class="alert alert-danger hidden" id="danger-alert"></div>
+          <button type="button" class="btn btn-success" id="add-btn">
+              <span class="glyphicon glyphicon-ok"/>
+          </button>
+          <button type="button" id="cancel-btn" class="btn btn-danger pull-right">
+              <span class="glyphicon glyphicon-remove"/>
+          </button>
+      </form>
+  </div>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="../bower_components/jquery/dist/jquery.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="../bower_components/bootstrap/dist/js/bootstrap.js"></script>
+<script src="../js/create_new.js"></script>
+</body>
+</html>
