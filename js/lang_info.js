@@ -25,7 +25,7 @@ LangInfo.prototype.getDescription = function() {
     return this.description;
 };
 LangInfo.prototype.getFileName = function() {
-    return this.filename;
+    return this.fileName;
 };
 
 //openType represent the method of opening the language files, can be 'open' or 'create'

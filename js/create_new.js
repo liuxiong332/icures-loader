@@ -7,15 +7,15 @@ var langListInfo = global.langListInfo = new langInfo.LangInfoList('create');
 var trCompile = null;
 (function() {
     //compile the lang_list.jade file
-    fs.readFile('.\\lang_list.jade',{encoding:'utf8'},function(err,data) {
+    fs.readFile('./html/lang_list.jade',{encoding:'utf8'},function(err,data) {
         trCompile = jade.compile(data);
     });
 }());
 
 //insert lang info into the table
 function addLangInfoToTable(langInfo) {
-    var html = trCompile(langInfo);
-    $('language-list').append( html );
+    var html = trCompile({langInfo:langInfo});
+    $('#language-list').append( html );
 }
 
 function updateTable(langInfo) {
@@ -51,6 +51,7 @@ $(document).ready( function() {
     });
     $('#save-path-input').change( function(eventObj) {
         fileName = $(this).val() ;
+        $('#file-path').val(fileName);
         eventObj.stopPropagation();
     });
 });

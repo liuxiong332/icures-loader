@@ -16,7 +16,7 @@
           <tr>
               <th>Language Name</th>
               <th>Language Description</th>
-              <th></th>
+              <th>File Name</th>
           </tr>
           </thead>
           <tbody id="language-list">
@@ -51,11 +51,11 @@
               <input type="text" class="form-control" id="des-input" placeholder="input language description"/>
           </div>
           <div class="form-group">
-              <input id="file-path" type="text" placeholder="Choose File" disabled>
               <button type="button" class="btn btn-primary fileUpload">
                   <span class="glyphicon glyphicon-file"></span>
                   <input type="file" id="save-path-input" class="upload" accept=".txt" nwsaveas/>
               </button>
+              <input id="file-path" type="text" placeholder="Choose File" disabled>
           </div>
           <div class="alert alert-danger hidden" id="danger-alert"></div>
           <button type="button" class="btn btn-success" id="add-btn">
